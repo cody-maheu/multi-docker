@@ -1,0 +1,23 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t cmaheu17/react-test -f ./client/Dockerfile.dev ./client/Dockerfile.dev
+
+script:
+  - docker run -e CI=true cmaheu17/react-test npm test
+
+after_success:
+  #if tests pass build all production level containers
+  - docker build -t cmaheu17/multi-client ./client
+  - docker build -t cmaheu17/multi-nginx ./nginx
+  - docker build -t cmaheu17/multi-server ./server
+  - docker build -t cmaheu17/multi-worker ./worker
+  #log in to the docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  #Take images and push them to docker hub
+  - docker push cmaheu17/multi-client
+  - docker push cmaheu17/multi-nginx
+  - docker push cmaheu17/multi-server
+  - docker push cmaheu17/multi-worker
